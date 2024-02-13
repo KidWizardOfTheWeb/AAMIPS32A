@@ -3,7 +3,7 @@ import struct
 
 # Open input file for reading and output file for writing
 inputFile = open(sys.argv[1], "r")
-outputFile = open(sys.argv[2], "w")
+outputFile = open(sys.argv[2], "wb") # Make sure we set to "write binary", otherwise it's just text
 
 """
 OPCODE FORMAT RULES:
@@ -45,17 +45,74 @@ def parseInstruction(opcode, params):
     # Input: opcode w/ format, parameters
     # The opcode will be used to reference a format in the libs provided
     # Parameters are passed in and attempt to be written to hex.
-    # If parameters are valid, write to output file.
-    # If parameters are not valid, print which line in the input file throws an error
-    for i in range (len(opcodeFormats)):
+    isValidFormat = False
+    binLoc = 0
+    for i in range(len(opcodeFormats)):
         if opcode == opcodeFormats[i][0]:
-            pass
+            # If parameters are valid, continue.
+            isValidFormat = True
+            binLoc = i
         pass
-    # match opcode:
-    #     case num:
-    #         pass
-    #     case _:
-    #         pass
+    if isValidFormat is False:
+        # If parameters are not valid, print which line in the input file throws an error
+        return
+
+    # Create a bytearray, so we can write binary to the file
+    opcodeToBin = 0
+    match opcode:
+        case 'lw':
+            # DEC: 140
+            # BIN: 10001100
+            opcodeToBin = 140
+            pass
+        case 'sw':
+            # DEC: 172
+            # BIN: 10101100
+            opcodeToBin = 172
+            pass
+        case 'add':
+            # DEC: 0
+            # BIN: 00000000
+            pass
+        case 'sub':
+            # DEC: 0
+            # BIN: 00000000
+            pass
+        case 'and':
+            # DEC: 0
+            # BIN: 00000000
+            pass
+        case 'or':
+            # DEC: 0
+            # BIN: 00000000
+            pass
+        case 'slt':
+            # DEC: 0
+            # BIN: 00000000
+            pass
+        case 'beq':
+            # DEC: 16
+            # BIN: 00010000
+            opcodeToBin = 16
+            pass
+        case 'j':
+            # DEC: 8
+            # BIN: 00001000
+            opcodeToBin = 8
+            pass
+        case _:
+            pass
+
+    # Check if there is proper formatting for param 1
+    if '$' in params[0]:
+        # Ensure register is >=0 or <=31
+        if int(params[0].strip('$')) < 0 or int(params[0].strip('$')) > 31:
+            # If not, print the error on the line
+            return
+        else:
+            # Continue if valid
+            pass
+
     pass
 
 
@@ -78,6 +135,7 @@ def main():
         opcodeID = mutableData.partition(" ")[0]  # partition returns 3 items. Find the opcode before the space.
         params = mutableData.partition("\n")[0]  # partition returns 3 items. Find the opcode before the space.
         params = params.partition(" ")[2]
+        paramsArray = params.strip().split(',')
         # after we find the opcode, find if second param is imm or reg
         # we can do this by finding mutableData.partition(" ")[2] (everything after the first space), then running
         # partition("$")[2] again to find the next param.
@@ -94,7 +152,7 @@ def main():
                 # param 1 = the opcode
                 # param 2 = all params
                 # print("got in")
-                parseInstruction(opcodeID, params)
+                parseInstruction(opcodeID, paramsArray)
                 pass
             case 'sub':
                 pass
