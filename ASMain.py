@@ -5,8 +5,18 @@ import struct
 inputFile = open(sys.argv[1], "r")
 outputFile = open(sys.argv[2], "wb") # Make sure we set to "write binary", otherwise it's just text
 
+# Global copy of the whole file, so we can print errors
+asmInstructionData = ""
+
 """
 OPCODE FORMAT RULES:
+Formatting:
+Opcode
+reg to store to
+reg/imm
+reg
+dec representation of opcode binary
+
 1. Check opcode by reading first index of tuple.
 2. If valid, fill parameters into tuple.
 3. Return this. If the parameters are the wrong length, return error.
@@ -19,99 +29,69 @@ follow above step.
 """
 
 opcodeFormats = [
-    ('lw', '$r{0:d}', '{1:d}($r{2:d})'),
-    ('sw', '$r{0:d}', '{1:d}($r{2:d})'),
-    ('add', '$r{0:d}', '$r{1:d}', '$r{2:d}'),
-    ('sub', '$r{0:d}', '$r{1:d}', '$r{2:d}'),
-    ('and', '$r{0:d}', '$r{1:d}', '$r{2:d}'),
-    ('or', '$r{0:d}', '$r{1:d}', '$r{2:d}'),
-    ('slt', '$r{0:d}', '$r{1:d}', '$r{2:d}'),
-    ('beq', '$r{0:d}', '{1:d}', '$r{2:d}'),
-    ('j', '{0:d}')
+    ('lw', '$r{0:d}', '{1:d}($r{2:d})', 140),
+    ('sw', '$r{0:d}', '{1:d}($r{2:d})', 172),
+    ('add', '$r{0:d}', '$r{1:d}', '$r{2:d}', 0),
+    ('sub', '$r{0:d}', '$r{1:d}', '$r{2:d}', 0),
+    ('and', '$r{0:d}', '$r{1:d}', '$r{2:d}', 0),
+    ('or', '$r{0:d}', '$r{1:d}', '$r{2:d}', 0),
+    ('slt', '$r{0:d}', '$r{1:d}', '$r{2:d}', 0),
+    ('beq', '$r{0:d}', '{1:d}', '$r{2:d}', 16),
+    ('j', '{0:d}', 8)
 ]
-# opcodeFormats = [
-#     ("lw", "$r%d", "%d($r%d)"),
-#     ("sw", "$r%d", "%d($r%d)"),
-#     ("add", "$r%d", "$r%d"),
-#     ("sub", "$r%d", "$r%d"),
-#     ("and", "$r%d", "$r%d"),
-#     ("or", "$r%d", "$r%d"),
-#     ("slt", "$r%d", "$r%d"),
-#     ("beq", "$r%d", "%d"),
-#     ("j", "%d"),
-# ]
+
+def validateReg(register):
+    if '$' in register:
+        # Ensure register is >=0 or <=31
+        if int(register.strip('$')) < 0 or int(register.strip('$')) > 31:
+            # If not, print the error on the line
+            return False
+        else:
+            return True
+    else:
+        # Invalid, print error on line
+        return False
+    pass
+
 
 def parseInstruction(opcode, params):
     # Input: opcode w/ format, parameters
     # The opcode will be used to reference a format in the libs provided
     # Parameters are passed in and attempt to be written to hex.
     isValidFormat = False
-    binLoc = 0
+    opcodeToBin = 0
     for i in range(len(opcodeFormats)):
         if opcode == opcodeFormats[i][0]:
             # If parameters are valid, continue.
             isValidFormat = True
-            binLoc = i
+            opcodeToBin = opcodeFormats[i][4]
         pass
     if isValidFormat is False:
         # If parameters are not valid, print which line in the input file throws an error
         return
 
     # Create a bytearray, so we can write binary to the file
-    opcodeToBin = 0
-    match opcode:
-        case 'lw':
-            # DEC: 140
-            # BIN: 10001100
-            opcodeToBin = 140
-            pass
-        case 'sw':
-            # DEC: 172
-            # BIN: 10101100
-            opcodeToBin = 172
-            pass
-        case 'add':
-            # DEC: 0
-            # BIN: 00000000
-            pass
-        case 'sub':
-            # DEC: 0
-            # BIN: 00000000
-            pass
-        case 'and':
-            # DEC: 0
-            # BIN: 00000000
-            pass
-        case 'or':
-            # DEC: 0
-            # BIN: 00000000
-            pass
-        case 'slt':
-            # DEC: 0
-            # BIN: 00000000
-            pass
-        case 'beq':
-            # DEC: 16
-            # BIN: 00010000
-            opcodeToBin = 16
-            pass
-        case 'j':
-            # DEC: 8
-            # BIN: 00001000
-            opcodeToBin = 8
-            pass
-        case _:
-            pass
 
-    # Check if there is proper formatting for param 1
-    if '$' in params[0]:
-        # Ensure register is >=0 or <=31
-        if int(params[0].strip('$')) < 0 or int(params[0].strip('$')) > 31:
-            # If not, print the error on the line
-            return
+    for i in range(3):
+        if i is 0:
+            if not validateReg(params[0]):
+                return
+            else:
+                pass
         else:
-            # Continue if valid
-            pass
+            if '$' in params[i]:
+                # Ensure register is >=0 or <=31
+                if not params[i].strip('$').isdigit():
+
+                    # If not, print the error on the line
+                    return
+                else:
+                    # Continue if valid
+                    pass
+            else:
+                # Invalid, print error on line
+                pass
+        pass
 
     pass
 
@@ -136,6 +116,9 @@ def main():
         params = mutableData.partition("\n")[0]  # partition returns 3 items. Find the opcode before the space.
         params = params.partition(" ")[2]
         paramsArray = params.strip().split(',')
+        paramsArray[0] = paramsArray[0].strip(" ")
+        paramsArray[1] = paramsArray[1].strip(" ")
+        paramsArray[2] = paramsArray[2].strip(" ")
         # after we find the opcode, find if second param is imm or reg
         # we can do this by finding mutableData.partition(" ")[2] (everything after the first space), then running
         # partition("$")[2] again to find the next param.
@@ -168,6 +151,12 @@ def main():
                 pass
             case _:
                 pass
+        if mutableData.find('\n') is not -1:
+            # Increment to next line here
+            mutableData = mutableData[mutableData.find('\n') + 1:]
+        else:
+            # End the loop here
+            break
         pass
 
     pass
