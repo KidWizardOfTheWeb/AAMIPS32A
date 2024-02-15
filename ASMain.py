@@ -28,28 +28,28 @@ follow above step.
 3d. The third param (if it exists) will be a register. If a jump-involved opcode, it is an immediate.
 """
 
-# ID, num of params (including storage), then reg (0) or imm (1)
+# Includes ordering for params
 opcodeData = [
-    ('lw', 3, 0, 1, 0),
-    ('sw', 3, 0, 1, 0),
-    ('add', 3, 0, 0, 0),
-    ('sub', 3, 0, 0, 0),
-    ('and', 3, 0, 0, 0),
-    ('or', 3, 0, 0, 0),
-    ('slt', 3, 0, 0, 0),
-    ('beq', 3, 0, 0, 1),
-    ('j', 1, 1)
+    ('lw', 2, 0, 1),
+    ('sw', 2, 0, 1),
+    ('add', 1, 2, 0),
+    ('sub', 1, 2, 0),
+    ('and', 1, 2, 0),
+    ('or', 1, 2, 0),
+    ('slt', 1, 2, 0),
+    ('beq', 0, 1, 2),
+    ('j', 1, 0)
 ]
 #('add', bin(int('000000', 2)), '{1:05b}', '{2:05b}', '{0:05b}', bin(int('00000', 2)), bin(int('100000', 2))),
 opcodeFormats = [
-    ('lw', bin(int('100011', 2)), '{2:05b}', '{0:05b}', '{1:016b}'),
-    ('sw', bin(int('101011', 2)), '{2:05b}', '{0:05b}', '{1:016b}'),
-    ('add', bin(int('000000', 2)), '{0:05b}', '{0:05b}', '{0:05b}', bin(int('00000', 2)), bin(int('100000', 2))),
-    ('sub', bin(int('000000', 2)), '{0:05b}', '{0:05b}', '{0:05b}', bin(int('00000', 2)), bin(int('100010', 2))),
-    ('and', bin(int('000000', 2)), '{0:05b}', '{0:05b}', '{0:05b}', bin(int('00000', 2)), bin(int('100100', 2))),
-    ('or', bin(int('000000', 2)), '{1:05b}', '{2:05b}', '{0:05b}', bin(int('00000', 2)), bin(int('100101', 2))),
-    ('slt', bin(int('000000', 2)), '{1:05b}', '{2:05b}', '{0:05b}', bin(int('00000', 2)), bin(int('101010', 2))),
-    ('beq', bin(int('000100', 2)), '{0:05b}', '{1:05b}', '{2:016b}'),
+    ('lw', bin(int('100011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
+    ('sw', bin(int('101011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
+    ('add', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), '{0:05b}'.format(32)),
+    ('sub', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), '{0:05b}'.format(34)),
+    ('and', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), '{0:05b}'.format(36)),
+    ('or', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), bin(int('100101', 2))),
+    ('slt', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), bin(int('101010', 2))),
+    ('beq', '{0:04b}'.format(1), '{0:07b}', '{0:05b}', '{0:016b}'),
     ('j', bin(int('000010', 2)), '{0:026b}')
 ]
 
@@ -81,6 +81,10 @@ def validateReg(register, storageFlag):
         # Invalid, print error on line
         if '0x' in register:
             return True
+        else:
+            register = register.replace("-", "", 1)
+            if register.isdigit():
+                return True
         return False
     pass
 
@@ -91,18 +95,22 @@ def parseInstruction(opcode, params):
     # Parameters are passed in and attempt to be written to hex.
     isValidFormat = False
     opcodeIndex = 0
+    asmString = ""
+    asmList = [None] * len(params)
+
     for i in range(len(opcodeFormats)):
         if opcode == opcodeFormats[i][0]:
             # If parameters are valid, write first identifier to file and set to true
             isValidFormat = True
             opcodeIndex = i
+            asmString += opcodeFormats[i][1]
+            # print(asmString)
         pass
     if isValidFormat is False:
         # If parameters are not valid, print which line in the input file throws an error
         return
 
     # Create a bytearray, so we can write binary to the file
-
     for i in range(3):
         if not validateReg(params[i], i):
             # if imm and register is not valid, stop here, print error on the line
@@ -110,10 +118,25 @@ def parseInstruction(opcode, params):
         else:
             # if valid, write the value here
             binWrite = int(params[i].replace("$", "", 1))
-            print(opcodeFormats[opcodeIndex][i+2].format(binWrite))
+            # print(opcodeFormats[opcodeIndex][i+2].format(binWrite))
+            if binWrite < 0:
+                binWrite = 65535 - abs(binWrite) + 1
+                # print(hex(binWrite))
+                pass
+            asmList[i] = opcodeFormats[opcodeIndex][i+2].format(binWrite)
+            # asmString += opcodeFormats[opcodeIndex][opcodeData[opcodeIndex][i+1]].format(binWrite)
             # print(bin(int(opcodeFormats[opcodeIndex][i+2].format(binWrite))))
             pass
         pass
+
+    for i in range(len(opcodeData[opcodeIndex])-1):
+        asmString += asmList[opcodeData[opcodeIndex][i+1]]
+        pass
+    if (len(opcodeFormats[opcodeIndex]) > 5):
+        asmString += opcodeFormats[opcodeIndex][5] + opcodeFormats[opcodeIndex][6]
+        pass
+    print(asmString)
+
 
     pass
 
@@ -176,6 +199,7 @@ def main():
             case 'slt':
                 pass
             case 'beq':
+                parseInstruction(opcodeID, paramsArray)
                 pass
             case 'j':
                 pass
