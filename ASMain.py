@@ -44,12 +44,12 @@ opcodeData = [
 opcodeFormats = [
     ('lw', bin(int('100011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
     ('sw', bin(int('101011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
-    ('add', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), '{0:05b}'.format(32)),
-    ('sub', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), '{0:05b}'.format(34)),
-    ('and', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), '{0:05b}'.format(36)),
-    ('or', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), bin(int('100101', 2))),
-    ('slt', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', '{0:05b}'.format(0), bin(int('101010', 2))),
-    ('beq', '{0:04b}'.format(1), '{0:07b}', '{0:05b}', '{0:016b}'),
+    ('add', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 32),
+    ('sub', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 34),
+    ('and', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 36),
+    ('or', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 37),
+    ('slt', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 42),
+    ('beq', '{0:06b}'.format(4), '{0:05b}', '{0:05b}', '{0:016b}'),
     ('j', bin(int('000010', 2)), '{0:026b}')
 ]
 
@@ -97,6 +97,7 @@ def parseInstruction(opcode, params):
     opcodeIndex = 0
     asmString = ""
     asmList = [None] * len(params)
+    asmListNumList = [None] * 4
 
     for i in range(len(opcodeFormats)):
         if opcode == opcodeFormats[i][0]:
@@ -123,6 +124,7 @@ def parseInstruction(opcode, params):
                 binWrite = 65535 - abs(binWrite) + 1
                 # print(hex(binWrite))
                 pass
+            # asmListNumList[i] = binWrite
             asmList[i] = opcodeFormats[opcodeIndex][i+2].format(binWrite)
             # asmString += opcodeFormats[opcodeIndex][opcodeData[opcodeIndex][i+1]].format(binWrite)
             # print(bin(int(opcodeFormats[opcodeIndex][i+2].format(binWrite))))
@@ -133,9 +135,44 @@ def parseInstruction(opcode, params):
         asmString += asmList[opcodeData[opcodeIndex][i+1]]
         pass
     if (len(opcodeFormats[opcodeIndex]) > 5):
-        asmString += opcodeFormats[opcodeIndex][5] + opcodeFormats[opcodeIndex][6]
+        asmString += '{0:05b}'.format(opcodeFormats[opcodeIndex][5]) + '{0:05b}'.format(opcodeFormats[opcodeIndex][6])
         pass
+    # outputFile.write(finalWrite)
+    # chop the string into 4 pieces (length of binary)
+    # write to bytes with 0b in front
+    # convert to int
+    # write as binary to file
+    # outputFile.write(bytes(int(asmList[opcodeData[opcodeIndex][i+1]], 2)))
+    # 00000000 01000011 00001000 00100000
+    # 00010000 01100100 11111111 11111110
+    # asmListNumList[0] = int(asmString[:8], 2)
+    # asmListNumList[1] = int(asmString[9:17], 2)
+    # asmListNumList[2] = int(asmString[18:25], 2)
+    # asmListNumList[3] = int(asmString[26:], 2)
+    fix = 0
+    if opcodeFormats[opcodeIndex][0] == 'beq':
+        # Find out why this is happening please
+        fix = 1
+        pass
+    asmListNumList[0] = int(asmString[:7+fix], 2)
+    asmListNumList[1] = int(asmString[8:16], 2)
+    asmListNumList[2] = int(asmString[17:24+fix], 2)
+    asmListNumList[3] = int(asmString[25-fix:], 2)
+
+    # print(str(bin(asmListNumList[0])) + " " + str(bin(asmListNumList[1])) + " " + str(bin(asmListNumList[2])) + " " + str(bin(asmListNumList[3])))
+
+    # for i in range(4):
+    #     print(str(bin(asmListNumList[i])) + " ")
     print(asmString)
+    finalByteArr = bytearray(asmListNumList)
+    conversion = bytes(finalByteArr)
+    outputFile.write(conversion)
+
+
+
+    # for i in range(4):
+    #     outputFile.write(asmListNumList[i])
+    # print(asmString)
 
 
     pass
