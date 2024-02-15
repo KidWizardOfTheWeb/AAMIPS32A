@@ -40,7 +40,8 @@ opcodeData = [
     ('beq', 0, 1, 2),
     ('j', 1, 0)
 ]
-#('add', bin(int('000000', 2)), '{1:05b}', '{2:05b}', '{0:05b}', bin(int('00000', 2)), bin(int('100000', 2))),
+
+
 opcodeFormats = [
     ('lw', bin(int('100011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
     ('sw', bin(int('101011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
@@ -52,18 +53,6 @@ opcodeFormats = [
     ('beq', '{0:06b}'.format(4), '{0:05b}', '{0:05b}', '{0:016b}'),
     ('j', bin(int('000010', 2)), '{0:026b}')
 ]
-
-# opcodeFormats = [
-#     ('lw', '$r{0:d}', '{1:d}($r{2:d})', bin(0x23)),
-#     ('sw', '$r{0:d}', '{1:d}($r{2:d})', bin(0x2B)),
-#     ('add', '$r{0:d}', '$r{1:d}', '$r{2:d}', bin(0x20)),
-#     ('sub', '$r{0:d}', '$r{1:d}', '$r{2:d}', bin(0x22)),
-#     ('and', '$r{0:d}', '$r{1:d}', '$r{2:d}', bin(0x24)),
-#     ('or', '$r{0:d}', '$r{1:d}', '$r{2:d}', bin(0x25)),
-#     ('slt', '$r{0:d}', '$r{1:d}', '$r{2:d}', bin(0x2A)),
-#     ('beq', '$r{0:d}', '{1:d}', '$r{2:d}', bin(0x4)),
-#     ('j', '{0:d}', bin(0x2))
-# ]
 
 
 def validateReg(register, storageFlag):
@@ -119,15 +108,11 @@ def parseInstruction(opcode, params):
         else:
             # if valid, write the value here
             binWrite = int(params[i].replace("$", "", 1))
-            # print(opcodeFormats[opcodeIndex][i+2].format(binWrite))
             if binWrite < 0:
                 binWrite = 65535 - abs(binWrite) + 1
                 # print(hex(binWrite))
                 pass
-            # asmListNumList[i] = binWrite
             asmList[i] = opcodeFormats[opcodeIndex][i+2].format(binWrite)
-            # asmString += opcodeFormats[opcodeIndex][opcodeData[opcodeIndex][i+1]].format(binWrite)
-            # print(bin(int(opcodeFormats[opcodeIndex][i+2].format(binWrite))))
             pass
         pass
 
@@ -142,45 +127,21 @@ def parseInstruction(opcode, params):
     # write to bytes with 0b in front
     # convert to int
     # write as binary to file
-    # outputFile.write(bytes(int(asmList[opcodeData[opcodeIndex][i+1]], 2)))
-    # 00000000 01000011 00001000 00100000
-    # 00010000 01100100 11111111 11111110
-    # asmListNumList[0] = int(asmString[:8], 2)
-    # asmListNumList[1] = int(asmString[9:17], 2)
-    # asmListNumList[2] = int(asmString[18:25], 2)
-    # asmListNumList[3] = int(asmString[26:], 2)
-    fix = 0
-    if opcodeFormats[opcodeIndex][0] == 'beq':
-        # Find out why this is happening please
-        fix = 1
-        pass
-    asmListNumList[0] = int(asmString[:7+fix], 2)
+
+    asmListNumList[0] = int(asmString[:8], 2)
     asmListNumList[1] = int(asmString[8:16], 2)
-    asmListNumList[2] = int(asmString[17:24+fix], 2)
-    asmListNumList[3] = int(asmString[25-fix:], 2)
-
-    # print(str(bin(asmListNumList[0])) + " " + str(bin(asmListNumList[1])) + " " + str(bin(asmListNumList[2])) + " " + str(bin(asmListNumList[3])))
-
-    # for i in range(4):
-    #     print(str(bin(asmListNumList[i])) + " ")
+    asmListNumList[2] = int(asmString[16:24], 2)
+    asmListNumList[3] = int(asmString[24:], 2)
     print(asmString)
     finalByteArr = bytearray(asmListNumList)
     conversion = bytes(finalByteArr)
     outputFile.write(conversion)
-
-
-
-    # for i in range(4):
-    #     outputFile.write(asmListNumList[i])
-    # print(asmString)
-
-
     pass
 
 
 def main():
     # Create blank string to store all ASM file instructions
-    asmInstructionData = ""
+    global asmInstructionData
 
     # Read whole file into the string
     with open(sys.argv[1], "r") as inputFile:
