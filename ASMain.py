@@ -62,7 +62,7 @@ def validateReg(register, storageFlag):
     if '$' in register:
         # Ensure register is >=0 or <=31
         if int(register.strip('$')) < 0 or int(register.strip('$')) > 31:
-            # If not, print the error on the line
+            print("ERROR: Register is out of range on line " + str(lineNum))
             return False
         else:
             return True
@@ -74,6 +74,7 @@ def validateReg(register, storageFlag):
             register = register.replace("-", "", 1)
             if register.isdigit():
                 return True
+        print("ERROR: Invalid number on line " + str(lineNum))
         return False
     pass
 
@@ -98,6 +99,7 @@ def parseInstruction(opcode, params):
         pass
     if isValidFormat is False:
         # If parameters are not valid, print which line in the input file throws an error
+        print("ERROR: Opcode format is invalid on line " + str(lineNum))
         return
 
     # Create a bytearray, so we can write binary to the file
@@ -132,7 +134,7 @@ def parseInstruction(opcode, params):
     asmListNumList[1] = int(asmString[8:16], 2)
     asmListNumList[2] = int(asmString[16:24], 2)
     asmListNumList[3] = int(asmString[24:], 2)
-    print(asmString)
+    # print(asmString)
     finalByteArr = bytearray(asmListNumList)
     conversion = bytes(finalByteArr)
     outputFile.write(conversion)
@@ -142,6 +144,8 @@ def parseInstruction(opcode, params):
 def main():
     # Create blank string to store all ASM file instructions
     global asmInstructionData
+    global lineNum
+    lineNum = 0
 
     # Read whole file into the string
     with open(sys.argv[1], "r") as inputFile:
@@ -202,10 +206,12 @@ def main():
             case 'j':
                 pass
             case _:
+                print("ERROR: Opcode format is invalid on line " + str(lineNum))
                 pass
         if mutableData.find('\n') != -1:
             # Increment to next line here
             mutableData = mutableData[mutableData.find('\n') + 1:]
+            lineNum+=1
         else:
             # End the loop here
             break
