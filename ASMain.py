@@ -43,20 +43,20 @@ opcodeData = [
 
 
 opcodeFormats = [
-    ('lw', bin(int('100011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
-    ('sw', bin(int('101011', 2)), '{0:05b}', '{0:05b}', '{0:016b}'),
+    ('lw', '{0:06b}'.format(35), '{0:05b}', '{0:016b}', '{0:05b}'),
+    ('sw', '{0:06b}'.format(35), '{0:05b}', '{0:016b}', '{0:05b}'),
     ('add', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 32),
     ('sub', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 34),
     ('and', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 36),
     ('or', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 37),
     ('slt', '{0:05b}'.format(0), '{0:05b}', '{0:06b}', '{0:05b}', 0, 42),
     ('beq', '{0:06b}'.format(4), '{0:05b}', '{0:05b}', '{0:016b}'),
-    ('j', bin(int('000010', 2)), '{0:026b}')
+    ('j', '{0:06b}'.format(2), '{0:026b}')
 ]
 
 
-def validateReg(register, storageFlag):
-    if storageFlag == 0 and '$' not in register:
+def validateReg(register, storageFlag, opcode):
+    if storageFlag == 0 and '$' not in register and opcode != 'j':
         # Ensure first param is a register
         return False
     if '$' in register:
@@ -103,13 +103,16 @@ def parseInstruction(opcode, params):
         return
 
     # Create a bytearray, so we can write binary to the file
-    for i in range(3):
-        if not validateReg(params[i], i):
+    for i in range(len(params)):
+        if not validateReg(params[i], i, opcode):
             # if imm and register is not valid, stop here, print error on the line
             return
         else:
             # if valid, write the value here
-            binWrite = int(params[i].replace("$", "", 1))
+            if '0x' in params[i]:
+                binWrite = int(params[i].replace("0x", "", 1))
+            else:
+                binWrite = int(params[i].replace("$", "", 1))
             if binWrite < 0:
                 binWrite = 65535 - abs(binWrite) + 1
                 # print(hex(binWrite))
@@ -119,7 +122,11 @@ def parseInstruction(opcode, params):
         pass
 
     for i in range(len(opcodeData[opcodeIndex])-1):
-        asmString += asmList[opcodeData[opcodeIndex][i+1]]
+        if len(asmList) < 2:
+            asmString += asmList[0]
+            break
+        else:
+            asmString += asmList[opcodeData[opcodeIndex][i+1]]
         pass
     if (len(opcodeFormats[opcodeIndex]) > 5):
         asmString += '{0:05b}'.format(opcodeFormats[opcodeIndex][5]) + '{0:05b}'.format(opcodeFormats[opcodeIndex][6])
@@ -164,7 +171,10 @@ def main():
         params = params.partition(" ")[2]
         if params.find('0x') != -1:
             tempList = params.strip().split(', ')
-            paramsArray = [tempList[0], tempList[1].partition("(")[0], tempList[1].partition("(")[2].partition(")")[0]]
+            if (len(tempList) < 2):
+                paramsArray = [tempList[0]]
+            else:
+                paramsArray = [tempList[0], tempList[1].partition("(")[0], tempList[1].partition("(")[2].partition(")")[0]]
             pass
         else:
             paramsArray = params.strip().split(',')
@@ -204,6 +214,7 @@ def main():
                 parseInstruction(opcodeID, paramsArray)
                 pass
             case 'j':
+                parseInstruction(opcodeID, paramsArray)
                 pass
             case _:
                 print("ERROR: Opcode format is invalid on line " + str(lineNum))
