@@ -192,6 +192,7 @@ def main():
                 parseInstruction(opcodeID, paramsArray)
                 pass
             case 'sw':
+                parseInstruction(opcodeID, paramsArray)
                 pass
             case 'add':
                 # this should pass in:
@@ -207,8 +208,10 @@ def main():
                 parseInstruction(opcodeID, paramsArray)
                 pass
             case 'or':
+                parseInstruction(opcodeID, paramsArray)
                 pass
             case 'slt':
+                parseInstruction(opcodeID, paramsArray)
                 pass
             case 'beq':
                 parseInstruction(opcodeID, paramsArray)
