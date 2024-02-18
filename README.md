@@ -81,7 +81,15 @@ slt:
 ```
 ```commandline
 branch if equal (beq)
+    example: $rs, $rt, imm
+        parsing:
+        $rs checks reg param 1 for comparison
+        $rt checks reg param 2 for comparison
+        imm branches to this value if equal
 ```
 ```commandline
 jump (j)
+    example: address
+    parsing:
+        address is the value to jump to
 ```
